@@ -1,0 +1,113 @@
+---
+title: "Sravani_Project3_task1"
+author: "Sravani Saripalli"
+date: "5/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Loading libraries
+
+library(readr)
+library(stringr)
+library(forcats)
+library(dplyr)
+library(tidytext)
+library(janeaustenr)
+library(ggplot2)
+library(tidyr)
+library(igraph)
+library(ggraph)
+library(magrittr)
+library(readxl)
+library(igraph)
+```
+
+
+```{r}
+key<-read_excel("~/Downloads/Keyword_data.xlsx")
+Keyword_data<-key[-c(1,2,11,12,13,23,24,25,34,35,36,45,46,47,56,57,58),-1]
+keywords<-data.frame(Key_word=union_all(key$`Keyword 1`,key$`Keyword 2`,key$`Keyword 3`,key$`Keyword 4`,key$`Keyword 5`,key$`Keyword 6`,key$`Keyword 7`,key$`Keyword 8`,key$`Keyword 9`,key$`Keyword 10`,key$`Keyword 11`,key$`Keyword 12`)) %>% 
+  drop_na()
+#1 adjacency matrix
+row_col=length(unique(keywords$Key_word))
+adj_matrix <- matrix(0, nrow=row_col, ncol=row_col)
+colnames(adj_matrix)<-sort(unique(keywords$Key_word))
+rownames(adj_matrix)<-sort(unique(keywords$Key_word))
+```
+
+```{r}
+for (i in 1:length(Keyword_data$`Keyword 1`)){
+  temp<-unlist(Keyword_data[i,])
+  temp<-temp[!is.na(temp)]
+  keyword_list<-combn(temp,2)
+  for(j in 1:length(keyword_list[1,])){
+    rowind<-which(rownames(adj_matrix)==(keyword_list[1,j]))
+    colind<-which(colnames(adj_matrix)==(keyword_list[2,j]))
+    adj_matrix[rowind,colind]<-adj_matrix[rowind,colind]+1
+    adj_matrix[colind,rowind]<-adj_matrix[colind,rowind]+1
+}
+}
+```
+
+```{r}
+adj <- graph_from_adjacency_matrix(adj_matrix, mode = "undirected" ,weighted = TRUE ) # For directed networks
+plot(adj)
+```
+
+```{r}
+deg <- degree(adj, mode = "all")
+deg_df<-as.data.frame(deg)
+head(deg_df,10)
+```
+
+```{r}
+strg <- strength(adj, mode = "all")
+strg_df <- as.data.frame(strg)
+head(strg_df,10)
+```
+```{r}
+Top10_deg=head(arrange(deg_df,desc(deg_df$deg)),10)
+Top10_deg
+```
+
+```{r}
+Top10_str=head(arrange(strg_df,desc(strg_df$strg)),10)
+Top10_str
+```
+
+```{r}
+weights=E(adj)$weight
+combs=attr(E(adj),"vnames")
+weight_df=data.frame(combs,weights)
+Top10_weight= head(arrange(weight_df,desc(weight_df$weights)),10)
+Top10_weight
+```
+
+```{r}
+df1 <- as.data.frame(deg)
+df2 <- as.data.frame(strg)
+df1 <- cbind(df1,df2$strg)
+colnames(df1)[2] <- "strength"
+avg_df <- df1 %>%
+  group_by(deg) %>%
+  summarise(Average_strength = mean(strg))
+# Plotting Degree vs Average strength
+plot(x= avg_df$deg, y = avg_df$Average_strength , main="Degree vs Average Strength",
+     xlab="Degree", ylab="Average_Strength")
+```
+
+
+
+
+
+
+
+
+
+
+

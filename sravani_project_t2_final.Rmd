@@ -1,0 +1,1436 @@
+---
+title: "sravani_project3_t2"
+author: "Sravani Saripalli"
+date: "5/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+library(tidytext)
+library(janeaustenr)
+library(ggplot2)
+library(tidyr)
+library(igraph)
+library(ggraph)
+library("tm")
+library("SnowballC")
+library("wordcloud")
+library("RColorBrewer")
+library(plotly)
+library(readr)
+```
+
+#Year 2022
+```{r}
+df_2022 <- read_csv("~/Downloads/2022.csv")
+```
+
+```{r}
+df_2022 <- separate(df_2022,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+```
+
+```{r}
+#Converting tweets text to lower case
+df_2022$tweet <- tolower(df_2022$tweet)
+#Selecting tweets of the year of 2022
+tweets_2022 <- select(df_2022, Year, tweet)%>% 
+  filter(Year=="2022")
+df_2022 =data.frame(format(as.Date(as.character(tweets_2022$Year), format="%Y"),df_2022$tweet))
+head(tweets_2022,10)
+```
+
+```{r}
+#Cleaning the tweets data by splitting and removing stop words
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2022 <- tweets_2022 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+#Counting the word and it's frequency then assign rank based on frequency
+words_count_2022<- words_2022 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+total_words<-data.frame(sum(words_count_2022$n))
+words_count_2022<- data.frame(words_count_2022,total_words)
+frequency_2022 <- words_count_2022$Frequency <- (words_count_2022$n/words_count_2022$sum.words_count_2022.n.)
+Words_2022 <- mutate(words_count_2022,frequency_2022,rank=row_number())
+top_2022 <- head(words_count_2022,10)
+top_2022
+```
+```{r}
+# PLotting top 10 words  and its frequency
+plot_ly(top_2022, type='bar', x = top_2022$word , y = top_2022$Frequency)
+```
+```{r}
+ggplot(Words_2022,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2022 <- tweets_2022 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2022,10)
+```
+```{r}
+#Removing Stop Words
+bigrams_2022<- bigrams_2022 %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") # separating words in bigram
+bigrams_2022 <- bigrams_2022 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))  # using the %in% operator to check matching values in the vectors and removing stopwords.
+```
+
+```{r}
+#Counting and filtering n-grams
+count_bigrams_2022<- bigrams_2022 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2022 <- count_bigrams_2022 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.15, "inches"))
+ggraph(bigram_graph_2022, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, 'inches'), color="black") +
+  geom_node_point(color = "purple", size = 5) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  theme_void()
+```
+
+#Year 2021
+
+```{r}
+df_2021 <- read_csv("~/Downloads/2021.csv")
+```
+
+```{r}
+df_2021 <- separate(df_2021,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2021,10)
+```
+
+```{r}
+#Converting tweet text to lower case
+df_2021$tweet <- tolower(df_2021$tweet)
+#Selecting tweets only from the year of 2017 from the data set
+tweets_2021 <- select(df_2021, Year, tweet)%>% filter(Year=="2021")
+df_2021 =data.frame(format(as.Date(as.character(tweets_2021$Year), format="%Y"),df_2021$tweet))
+head(tweets_2021,10)
+```
+
+```{r}
+#Spliting the tweets into words and removing stop words
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2021 <- tweets_2021 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+#Counting the occurance of words
+words_count_2021<- words_2021 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+#Counting the total number of words
+total_words<-data.frame(sum(words_count_2021$n))
+#Calculating the frequency
+words_count_2021<- data.frame(words_count_2021,total_words)
+frequency_2021 <- words_count_2021$Frequency <- (words_count_2021$n/words_count_2021$sum.words_count_2021.n.)
+#Rank based on the frequency
+Words_2021 <- mutate(words_count_2021,frequency_2021,rank=row_number())
+```
+
+```{r}
+top_2021 <- head(words_count_2021,10)
+top_2021
+```
+
+```{r}
+plot_ly(top_2021, type='bar', x = top_2021$word , y = top_2021$Frequency,color = "Orange")
+```
+
+```{r}
+ggplot(Words_2021,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+#betokening with ngram
+bigrams_2021 <- tweets_2021 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2021,10)
+```
+
+```{r}
+#Removing Stop Words by separating the bigrams into words
+bigrams_2021<- bigrams_2021 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2021 <- bigrams_2021 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+#Counting n-grams and filtering them
+count_bigrams_2021<- bigrams_2021 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2021 <- count_bigrams_2021 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2021, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(0.7, 'inches'), color="black") +
+  geom_node_point(color = "Blue", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.5, hjust = 0.5) +
+  theme_void()
+```
+#Year 2020
+```{r}
+#Importing Data Sets
+df_2020 <- read_csv("~/Downloads/2020.csv")
+```
+
+```{r}
+df_2020 <- separate(df_2020,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2020,10)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2020$tweet <- tolower(df_2020$tweet)
+#tweets from year 2020
+tweets_2020 <- select(df_2020, Year, tweet)%>% 
+  filter(Year=="2020")
+df_2020 =data.frame(format(as.Date(as.character(tweets_2020$Year), format="%Y"),df_2020$tweet))
+head(tweets_2020,10)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2020 <- tweets_2020 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2020<- words_2020 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2020$n))
+```
+
+```{r}
+words_count_2020<- data.frame(words_count_2020,total_words)
+frequency_2020 <- words_count_2020$Frequency <- (words_count_2020$n/words_count_2020$sum.words_count_2020.n.)
+```
+
+```{r}
+Words_2020 <- mutate(words_count_2020,frequency_2020,rank=row_number())
+head(Words_2020,10)
+```
+
+```{r}
+top_2020 <- head(words_count_2020,10)
+top_2020
+```
+```{r}
+plot_ly(top_2020, type='bar', x = top_2020$word , y = top_2020$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2020,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2020 <- tweets_2020 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2020,10)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2020<- bigrams_2020 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2020 <- bigrams_2020 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2020<- bigrams_2020 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2020 <- count_bigrams_2020 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2020, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+#year 2019
+```{r}
+df_2019 <- read_csv("~/Downloads/2019.csv")
+```
+
+```{r}
+df_2019 <- separate(df_2019,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2019,5)
+```
+
+```{r}
+#Converting tweet to lower case
+df_2019$tweet <- tolower(df_2019$tweet)
+#Selecting tweets only from the year of 2017 from the data set
+tweets_2019 <- select(df_2019, Year, tweet)%>% filter(Year=="2019")
+df_2019 =data.frame(format(as.Date(as.character(tweets_2019$Year), format="%Y"),df_2019$tweet))
+head(tweets_2019,5)
+```
+
+```{r}
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2019 <- tweets_2019 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2019<- words_2019 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2019$n))
+```
+
+```{r}
+words_count_2019<- data.frame(words_count_2019,total_words)
+frequency_2019 <- words_count_2019$Frequency <- (words_count_2019$n/words_count_2019$sum.words_count_2019.n.)
+```
+
+```{r}
+words_2019 <- mutate(words_count_2019,frequency_2019,rank=row_number())
+top_2019 <- head(words_count_2019,10)
+top_2019
+```
+```{r}
+#Just trying wordcloud 
+wordcloud(
+  words = words_2019$word, 
+  freq = words_2019$n, 
+  min.freq = 20, 
+  colors = brewer.pal(8, 'Dark2')
+)
+```
+
+```{r}
+plot_ly(top_2019, type='bar', x = top_2019$word , y = top_2019$Frequency,color = 'Orange')
+```
+
+
+
+```{r}
+ggplot(words_2019,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2019 <- tweets_2019 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2019,5)
+```
+```{r}
+bigrams_2019<- bigrams_2019 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2019 <- bigrams_2019 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+#Counting and filtering n-grams
+count_bigrams_2019<- bigrams_2019 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+
+```{r}
+bigram_graph_2019 <- count_bigrams_2019 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2019, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "pink", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+```{r}
+df_2018 <- read_csv("~/Downloads/2018.csv")
+```
+
+```{r}
+df_2018 <- separate(df_2018,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2018,5)
+```
+```{r}
+#Converting text to lower case
+df_2018$tweet <- tolower(df_2018$tweet)
+#Selecting tweets only from the year of 2018 from the data set
+tweets_2018 <- select(df_2018, Year, tweet)%>% filter(Year=="2018")
+df_2018 =data.frame(format(as.Date(as.character(tweets_2018$Year), format="%Y"),df_2018$tweet))
+head(tweets_2018,5)
+```
+
+```{r}
+#Spliting into words and removing stop words
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2018 <- tweets_2018 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2018<- words_2018 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2018$n))
+```
+
+```{r}
+words_count_2018<- data.frame(words_count_2018,total_words)
+frequency_2018 <- words_count_2018$Frequency <- (words_count_2018$n/words_count_2018$sum.words_count_2018.n.)
+```
+
+```{r}
+Words_2018 <- mutate(words_count_2018,frequency_2018,rank=row_number())
+```
+
+```{r}
+top_2018 <- head(words_count_2018,10)
+top_2018
+```
+```{r}
+plot_ly(top_2018, type='bar', x = top_2018$word , y = top_2018$Frequency)
+```
+
+```{r}
+ggplot(Words_2018,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2018 <- tweets_2018 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2018,5)
+```
+```{r}
+bigrams_2018<- bigrams_2018 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2018 <- bigrams_2018 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2018<- bigrams_2018 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+bigram_graph_2018 <- count_bigrams_2018 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2018, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "pink", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+```{r}
+#Importing Data Sets
+df_2017 <- read_csv("~/Downloads/2017.csv")
+```
+
+```{r}
+df_2017 <- separate(df_2017,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2017,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2017$tweet <- tolower(df_2017$tweet)
+#tweets from year 2020
+tweets_2017 <- select(df_2017, Year, tweet)%>% 
+  filter(Year=="2017")
+df_2017 =data.frame(format(as.Date(as.character(tweets_2017$Year), format="%Y"),df_2017$tweet))
+head(tweets_2017,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2017 <- tweets_2017 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2017<- words_2017 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2017$n))
+```
+
+```{r}
+words_count_2017<- data.frame(words_count_2017,total_words)
+frequency_2017 <- words_count_2017$Frequency <- (words_count_2017$n/words_count_2017$sum.words_count_2017.n.)
+```
+
+```{r}
+Words_2017<- mutate(words_count_2017,frequency_2017,rank=row_number())
+head(Words_2017,5)
+```
+
+```{r}
+top_2017 <- head(words_count_2017,10)
+top_2017
+```
+```{r}
+plot_ly(top_2017, type='bar', x = top_2017$word , y = top_2017$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2017,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2017 <- tweets_2017 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2017,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2017<- bigrams_2017 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2017 <- bigrams_2017 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2017<- bigrams_2017 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2017 <- count_bigrams_2017 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2017, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+#Year 2016
+
+```{r}
+#Importing Data Sets
+df_2016 <- read_csv("~/Downloads/2016.csv")
+```
+
+```{r}
+df_2016 <- separate(df_2016,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2016,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2016$tweet <- tolower(df_2016$tweet)
+#tweets from year 2020
+tweets_2016 <- select(df_2016, Year, tweet)%>% 
+  filter(Year=="2016")
+df_2016 =data.frame(format(as.Date(as.character(tweets_2016$Year), format="%Y"),df_2016$tweet))
+head(tweets_2016,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2016 <- tweets_2016 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2016<- words_2016 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2016$n))
+```
+
+```{r}
+words_count_2016<- data.frame(words_count_2016,total_words)
+frequency_2016 <- words_count_2016$Frequency <- (words_count_2016$n/words_count_2016$sum.words_count_2016.n.)
+```
+
+```{r}
+Words_2016<- mutate(words_count_2016,frequency_2016,rank=row_number())
+head(Words_2016,5)
+```
+
+```{r}
+top_2016 <- head(words_count_2016,10)
+top_2016
+```
+```{r}
+plot_ly(top_2016, type='bar', x = top_2016$word , y = top_2016$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2016,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2016 <- tweets_2016 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2016,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2016<- bigrams_2016 %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2016 <- bigrams_2016 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2016<- bigrams_2016 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2016 <- count_bigrams_2016 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2016, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+#year 2015
+
+```{r}
+#Importing Data Sets
+df_2015 <- read_csv("~/Downloads/2015.csv")
+```
+
+```{r}
+df_2015 <- separate(df_2015,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2015,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2015$tweet <- tolower(df_2015$tweet)
+#tweets from year 20215
+tweets_2015 <- select(df_2015, Year, tweet)%>% 
+  filter(Year=="2015")
+df_2015 =data.frame(format(as.Date(as.character(tweets_2015$Year), format="%Y"),df_2015$tweet))
+head(tweets_2015,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2015 <- tweets_2015 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2015<- words_2015 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2015$n))
+```
+
+```{r}
+words_count_2015<- data.frame(words_count_2015,total_words)
+frequency_2015 <- words_count_2015$Frequency <- (words_count_2015$n/words_count_2015$sum.words_count_2015.n.)
+```
+
+```{r}
+Words_2015<- mutate(words_count_2015,frequency_2015,rank=row_number())
+head(Words_2015,5)
+```
+
+```{r}
+top_2015 <- head(words_count_2015,10)
+top_2015
+```
+```{r}
+plot_ly(top_2015, type='bar', x = top_2015$word , y = top_2015$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2015,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2015 <- tweets_2015 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2015,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2015<- bigrams_2015%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2015 <- bigrams_2015 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2015<- bigrams_2015 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2015 <- count_bigrams_2015 %>%
+  filter(n>5)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2015, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+#Year 2014
+
+```{r}
+#Importing Data Sets
+df_2014 <- read_csv("~/Downloads/2014.csv")
+```
+
+```{r}
+df_2014 <- separate(df_2014,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2014,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2014$tweet <- tolower(df_2014$tweet)
+#tweets from year 20215
+tweets_2014<- select(df_2014, Year, tweet)%>% 
+  filter(Year=="2014")
+df_2014 =data.frame(format(as.Date(as.character(tweets_2014$Year), format="%Y"),df_2014$tweet))
+head(tweets_2014,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2014 <- tweets_2014 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2014<- words_2014 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2014$n))
+```
+
+```{r}
+words_count_2014<- data.frame(words_count_2014,total_words)
+frequency_2014 <- words_count_2014$Frequency <- (words_count_2014$n/words_count_2014$sum.words_count_2014.n.)
+```
+
+```{r}
+Words_2014<- mutate(words_count_2014,frequency_2014,rank=row_number())
+head(Words_2014,5)
+```
+
+```{r}
+top_2014 <- head(words_count_2014,10)
+top_2014
+```
+```{r}
+plot_ly(top_2014, type='bar', x = top_2014$word , y = top_2014$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2014,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2014 <- tweets_2014 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2014,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2014<- bigrams_2014%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2014 <- bigrams_2014 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2014<- bigrams_2014 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2014 <- count_bigrams_2014 %>%
+  filter(n>2)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2014, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+#Year 2013
+
+```{r}
+#Importing Data Sets
+df_2013 <- read_csv("~/Downloads/2013.csv")
+```
+
+```{r}
+df_2013 <- separate(df_2013,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2013,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2013$tweet <- tolower(df_2013$tweet)
+#tweets from year 20215
+tweets_2013<- select(df_2013, Year, tweet)%>% 
+  filter(Year=="2013")
+df_2013 =data.frame(format(as.Date(as.character(tweets_2013$Year), format="%Y"),df_2013$tweet))
+head(tweets_2013,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2013 <- tweets_2013 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2013<- words_2013 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2013$n))
+```
+
+```{r}
+words_count_2013<- data.frame(words_count_2013,total_words)
+frequency_2013 <- words_count_2013$Frequency <- (words_count_2013$n/words_count_2013$sum.words_count_2013.n.)
+```
+
+```{r}
+Words_2013<- mutate(words_count_2013,frequency_2013,rank=row_number())
+head(Words_2013,5)
+```
+
+```{r}
+top_2013 <- head(words_count_2013,10)
+top_2013
+```
+```{r}
+plot_ly(top_2013, type='bar', x = top_2013$word , y = top_2013$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2013,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2013 <- tweets_2013 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2013,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2013<- bigrams_2013%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2013 <- bigrams_2013 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2013<- bigrams_2013 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2013 <- count_bigrams_2013 %>%
+  filter(n>2)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2013, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+
+#Year 2012
+
+```{r}
+#Importing Data Sets
+df_2012 <- read_csv("~/Downloads/2012.csv")
+```
+
+```{r}
+df_2012 <- separate(df_2012,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2012,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2012$tweet <- tolower(df_2012$tweet)
+#tweets from year 20215
+tweets_2012<- select(df_2012, Year, tweet)%>% 
+  filter(Year=="2012")
+df_2012 =data.frame(format(as.Date(as.character(tweets_2012$Year), format="%Y"),df_2012$tweet))
+head(tweets_2012,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2012 <- tweets_2012 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2012<- words_2012 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2012$n))
+```
+
+```{r}
+words_count_2012<- data.frame(words_count_2012,total_words)
+frequency_2012 <- words_count_2012$Frequency <- (words_count_2012$n/words_count_2012$sum.words_count_2012.n.)
+```
+
+```{r}
+Words_2012<- mutate(words_count_2012,frequency_2012,rank=row_number())
+head(Words_2012,5)
+```
+
+```{r}
+top_2012 <- head(words_count_2012,10)
+top_2012
+```
+```{r}
+plot_ly(top_2012, type='bar', x = top_2012$word , y = top_2012$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2012,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2012 <- tweets_2012 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2012,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2012<- bigrams_2012%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2012 <- bigrams_2012 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2012<- bigrams_2012 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2012 <- count_bigrams_2012 %>%
+  filter(n>3)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2012, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+
+#year 2011
+```{r}
+#Importing Data Sets
+df_2011 <- read_csv("~/Downloads/2011.csv")
+```
+
+```{r}
+df_2011 <- separate(df_2011,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+head(df_2011,5)
+```
+
+```{r}
+#Converting tweets to lower case
+df_2011$tweet <- tolower(df_2011$tweet)
+#tweets from year 20215
+tweets_2011<- select(df_2011, Year, tweet)%>% 
+  filter(Year=="2011")
+df_2011 =data.frame(format(as.Date(as.character(tweets_2011$Year), format="%Y"),df_2011$tweet))
+head(tweets_2011)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2011 <- tweets_2011 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2011<- words_2011 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2011$n))
+```
+
+```{r}
+words_count_2011<- data.frame(words_count_2011,total_words)
+frequency_2011 <- words_count_2011$Frequency <- (words_count_2011$n/words_count_2011$sum.words_count_2011.n.)
+```
+
+```{r}
+Words_2011<- mutate(words_count_2011,frequency_2011,rank=row_number())
+head(Words_2011)
+```
+
+```{r}
+top_2011 <- head(words_count_2011,10)
+top_2011
+```
+```{r}
+plot_ly(top_2011, type='bar', x = top_2011$word , y = top_2011$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2011,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2011 <- tweets_2011 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2011,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2011<- bigrams_2011%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2011 <- bigrams_2011 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2011<- bigrams_2011 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2011 <- count_bigrams_2011 %>%
+  filter(n>1)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2011, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+#Year 2010
+
+```{r}
+#Importing Data Sets
+df_2010 <- read_csv("~/Downloads/2010.csv")
+```
+
+```{r}
+df_2010 <- separate(df_2010,date,into = c("Year", "Month", "Date&Time"),sep = "-",remove = TRUE, convert = TRUE, fill = "right")
+df_2010
+```
+
+```{r}
+#Converting tweets to lower case
+df_2010$tweet <- tolower(df_2010$tweet)
+#tweets from year 2010
+tweets_2010<- select(df_2010, Year, tweet)%>% 
+  filter(Year=="2010")
+df_2010 =data.frame(format(as.Date(as.character(tweets_2010$Year), format="%Y"),df_2010$tweet))
+head(tweets_2011,5)
+```
+
+```{r}
+#Spliting into words and removing stopwords
+remove_regex <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\bRT\\b|t.co|http|@|[0-9]"
+words_2010 <- tweets_2010 %>% 
+  filter(!str_detect(tweet, "^RT")) %>%
+  mutate(tweet = str_remove_all(tweet, remove_regex)) %>%
+  unnest_tokens(word, tweet) %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+```
+
+```{r}
+words_count_2010<- words_2010 %>%
+  group_by(word) %>%
+  count()%>%
+  arrange(-n)
+```
+
+```{r}
+total_words<-data.frame(sum(words_count_2010$n))
+```
+
+```{r}
+words_count_2010<- data.frame(words_count_2010,total_words)
+frequency_2010 <- words_count_2010$Frequency <- (words_count_2010$n/words_count_2010$sum.words_count_2010.n.)
+```
+
+```{r}
+Words_2010<- mutate(words_count_2010,frequency_2010,rank=row_number())
+head(Words_2010)
+```
+
+```{r}
+top_2010 <- words_count_2010
+top_2010
+```
+```{r}
+plot_ly(top_2010, type='bar', x = top_2010$word , y = top_2010$Frequency,color = 'Orange')
+```
+
+```{r}
+ggplot(Words_2010,aes(rank,Frequency)) + 
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+bigrams_2010 <- tweets_2010 %>%
+ unnest_tokens(bigram, tweet, token = "ngrams", n = 2)
+head(bigrams_2010,5)
+```
+
+```{r}
+#Removing Stop Words
+bigrams_2010<- bigrams_2010%>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_2010 <- bigrams_2010 %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)%>%
+  mutate(word1 = str_remove_all(word1, remove_regex))%>%
+  mutate(word2 = str_remove_all(word2, remove_regex))
+```
+
+```{r}
+count_bigrams_2010<- bigrams_2010 %>%
+  count(word1, word2)%>%
+  arrange(-n)%>%
+  na_if("")%>%
+  na.omit()
+```
+
+```{r}
+#Plotting the Bigram graph
+bigram_graph_2010 <- count_bigrams_2010 %>%
+  filter(n>0)%>%
+  graph_from_data_frame()
+a <- grid::arrow(type = "open", length = unit(.1, "inches"))
+ggraph(bigram_graph_2010, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches'), color="black") +
+  geom_node_point(color = "magenta", size = 3) +
+  geom_node_text(aes(label = name), vjust = 0.7, hjust = 0.7) +
+  theme_void()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
